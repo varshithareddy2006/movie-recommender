@@ -4,8 +4,8 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Load data
-ratings = pd.read_csv("rating1.csv")
-movies = pd.read_csv("movie_new.csv")
+ratings = pd.read_csv("ratings.csv")
+movies = pd.read_csv("movies.csv")
 
 # Build user-item matrix and similarity matrix
 user_item_matrix = pd.pivot_table(ratings, values='rating', index='userId', columns='movieId')
