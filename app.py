@@ -72,10 +72,10 @@ def recommend():
                     title_row = movies[movies['movieId'] == m]
                     if not title_row.empty:
                         title = title_row.iloc[0]['title']
-                    recommend_movies.append({
-                        'title': title,
-                        'predicted_rating': rating
-                    })
+                        recommend_movies.append({
+                            'title': title,
+                            'predicted_rating': rating
+                        })
     recommend_movies = sorted(recommend_movies, key=lambda x: x['predicted_rating'], reverse=True)[:N]
     return jsonify(recommend_movies)
 if __name__ == '__main__':
