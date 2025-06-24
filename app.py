@@ -44,6 +44,22 @@ def predict():
     movie_id = request.args.get('movie_id')
     rating = predict_rating(user_id, movie_id)
     return jsonify({'user_id': user_id, 'movie_id': movie_id, 'predicted_rating': round(rating, 2)})
+@app.route('/recommend', methods=['GET'])
+def recommend():
+    user_id = int(request.args.get('user_id'))
+    N = int(request.args.get('top_n', 5))  # default = top 5
+    user_rated = user_item_matrix.loc[user_id].dropna().index.tolist()
+    predictions = []
+
+    for movie_id in user_item_matrix.columns:
+        if movie_id not in user_rated:
+            pred = predict_rating(user_id, movie_id)
+            if pred > 0:
+                predictions.append((movie_id, pred))
+
+    top_n = sorted(predictions, key=lambda x: x[1], reverse=True)[:N]
+    result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
+    return jsonify({"user_id": user_id, "recommendations": result})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
