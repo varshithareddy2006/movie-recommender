@@ -1,16 +1,26 @@
-
 from flask import Flask, request, jsonify
-from recommendation import similarity_df, user_item_matrix, movies
 import pandas as pd
 import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
+# Load data
+ratings = pd.read_csv("ratings.csv")
+movies = pd.read_csv("movies.csv")
+print(f"Total ratings: {len(ratings)}")
+print(f"Total movies: {len(movies)}")
+# Build user-item matrix and similarity matrix
+user_item_matrix = pd.pivot_table(ratings, values='rating', index='userId', columns='movieId')
+similarity_matrix = cosine_similarity(user_item_matrix.fillna(0))
+sim_df = pd.DataFrame(similarity_matrix, index=user_item_matrix.index, columns=user_item_matrix.index)
+
+# Recommendation function
 def predict_rating(user_id, movie_id, k=40, threshold=0.1):
     user_id = int(user_id)
     movie_id = int(movie_id)
-    if movie_id not in user_item_matrix.columns or user_id not in similarity_df.index:
+    if movie_id not in user_item_matrix.columns or user_id not in sim_df.index:
         return 0
 
-    sims = similarity_df[user_id].drop(user_id, errors='ignore')
+    sims = sim_df[user_id].drop(user_id, errors='ignore')
     sims = sims[sims > threshold].sort_values(ascending=False).head(k)
 
     total_sim = 0
@@ -36,6 +46,7 @@ def predict():
     rating = predict_rating(user_id, movie_id)
     return jsonify({'user_id': user_id, 'movie_id': movie_id, 'predicted_rating': round(rating, 2)})
 
+@app.route('/recommend', methods=['GET'])
 @app.route('/recommend', methods=['GET'])
 def recommend():
     user_id = int(request.args.get('user_id'))
@@ -64,8 +75,5 @@ def recommend():
         result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
         return jsonify({"user_id": user_id, "recommendations": result})
 
-import os
-
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=8080)
