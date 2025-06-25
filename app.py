@@ -48,6 +48,8 @@ def predict():
 def recommend():
     user_id = int(request.args.get('user_id'))
     N = int(request.args.get('top_n', 5))  # default = top 5
+    k = int(request.args.get('k', 30))
+    threshold = float(request.args.get('threshold', 0.2))
     user_rated = user_item_matrix.loc[user_id].dropna().index.tolist()
     predictions = []
 
