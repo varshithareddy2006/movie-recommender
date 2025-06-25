@@ -65,14 +65,15 @@ def recommend():
         if pred > 0:
             predictions.append((movie_id, pred))
     if not predictions:
-    return jsonify({
-        "user_id": user_id,
-        "recommendations": [],
-        "note": "No recommendations available — try another user or adjust similarity settings."
-    })
-    top_n = sorted(predictions, key=lambda x: x[1], reverse=True)[:N]
-    result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
-    return jsonify({"user_id": user_id, "recommendations": result})
+        return jsonify({
+            "user_id": user_id,
+            "recommendations": [],
+            "note": "No recommendations available — try another user or adjust similarity settings."
+        })
+    else:
+        top_n = sorted(predictions, key=lambda x: x[1], reverse=True)[:N]
+        result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
+        return jsonify({"user_id": user_id, "recommendations": result})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
