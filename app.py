@@ -69,10 +69,5 @@ def recommend():
     result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
     return jsonify({"user_id": user_id, "recommendations": result})
 
-
-    top_n = sorted(predictions, key=lambda x: x[1], reverse=True)[:N]
-    result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
-    return jsonify({"user_id": user_id, "recommendations": result})
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
