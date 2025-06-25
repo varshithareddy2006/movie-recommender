@@ -14,7 +14,7 @@ similarity_matrix = cosine_similarity(user_item_matrix.fillna(0))
 sim_df = pd.DataFrame(similarity_matrix, index=user_item_matrix.index, columns=user_item_matrix.index)
 
 # Recommendation function
-def predict_rating(user_id, movie_id, k=30, threshold=0.5):
+def predict_rating(user_id, movie_id, k=40, threshold=0.1):
     user_id = int(user_id)
     movie_id = int(movie_id)
     if movie_id not in user_item_matrix.columns or user_id not in sim_df.index:
