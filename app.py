@@ -1,6 +1,30 @@
 
 from flask import Flask, request, jsonify
-from recommendation import predicted_ratings, user_item_matrix, movies
+from recommendation import similarity_df, user_item_matrix, movies
+import pandas as pd
+import numpy as np
+
+def predict_rating(user_id, movie_id, k=40, threshold=0.1):
+    user_id = int(user_id)
+    movie_id = int(movie_id)
+    if movie_id not in user_item_matrix.columns or user_id not in similarity_df.index:
+        return 0
+
+    sims = similarity_df[user_id].drop(user_id, errors='ignore')
+    sims = sims[sims > threshold].sort_values(ascending=False).head(k)
+
+    total_sim = 0
+    total_rating = 0
+    for other_user, sim in sims.items():
+        try:
+            rating = user_item_matrix.at[other_user, movie_id]
+            if pd.isna(rating):
+                continue
+            total_rating += sim * rating
+            total_sim += sim
+        except KeyError:
+            continue
+    return total_rating / total_sim if total_sim != 0 else 0
 
 # Flask app
 app = Flask(__name__)
@@ -9,7 +33,7 @@ app = Flask(__name__)
 def predict():
     user_id = request.args.get('user_id')
     movie_id = request.args.get('movie_id')
-    rating = predicted_ratings(user_id, movie_id)
+    rating = predict_rating(user_id, movie_id)
     return jsonify({'user_id': user_id, 'movie_id': movie_id, 'predicted_rating': round(rating, 2)})
 
 @app.route('/recommend', methods=['GET'])
@@ -26,7 +50,7 @@ def recommend():
 
     predictions = []
     for movie_id in sampled_movies:
-        pred = predicted_ratings(user_id, movie_id)
+        pred = predict_rating(user_id, movie_id)
         if pred > 0:
             predictions.append((movie_id, pred))
     if not predictions:
@@ -39,6 +63,8 @@ def recommend():
         top_n = sorted(predictions, key=lambda x: x[1], reverse=True)[:N]
         result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
         return jsonify({"user_id": user_id, "recommendations": result})
+
+import os
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
