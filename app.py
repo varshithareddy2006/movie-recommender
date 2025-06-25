@@ -35,7 +35,27 @@ def predict_rating(user_id, movie_id, k=40, threshold=0.1):
         except KeyError:
             continue
     return total_rating / total_sim if total_sim != 0 else 0
-
+def iu(user_id):
+  user_id=int(user_id)
+  if user_id not in user_item_matrix.index:
+    print(f"User {user_id} not found in matrix.")
+    return
+  s=user_item_matrix.loc[3]
+  print(s)
+  print(len(s))
+  id=[]
+  nid=[]
+  for m in movies.movieId:
+    try:
+      rating = user_item_matrix.at[user_id, m]
+      if not pd.isna(rating):
+        id.append(m)
+    except KeyError:
+      continue
+  for i in movies.movieId:
+    if i not in id:
+      nid.append(i)
+  return nid
 # Flask app
 app = Flask(__name__)
 
@@ -55,10 +75,8 @@ def recommend():
     if user_id not in user_item_matrix.index:
         return jsonify({"error": f"User ID {user_id} not found in matrix."}), 404
 
-    user_rated = user_item_matrix.loc[user_id].dropna().index.tolist()
-    unseen_movies = [m for m in user_item_matrix.columns if m not in user_rated]
-    sampled_movies = unseen_movies[:300]
-
+    sampled_movies= iu(user_id)
+    
     predictions = []
     for movie_id in sampled_movies:
         pred = predict_rating(user_id, movie_id)
@@ -77,3 +95,4 @@ def recommend():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
+
