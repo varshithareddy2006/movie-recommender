@@ -6,7 +6,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 # Load data
 ratings = pd.read_csv("ratings.csv")
 movies = pd.read_csv("movies.csv")
-
+print(f"Total ratings: {len(ratings)}")
+print(f"Total movies: {len(movies)}")
 # Build user-item matrix and similarity matrix
 user_item_matrix = pd.pivot_table(ratings, values='rating', index='userId', columns='movieId')
 similarity_matrix = cosine_similarity(user_item_matrix.fillna(0))
@@ -44,20 +45,30 @@ def predict():
     movie_id = request.args.get('movie_id')
     rating = predict_rating(user_id, movie_id)
     return jsonify({'user_id': user_id, 'movie_id': movie_id, 'predicted_rating': round(rating, 2)})
+
+@app.route('/recommend', methods=['GET'])
 @app.route('/recommend', methods=['GET'])
 def recommend():
     user_id = int(request.args.get('user_id'))
     N = int(request.args.get('top_n', 5))  # default = top 5
-    k = int(request.args.get('k', 30))
-    threshold = float(request.args.get('threshold', 0.2))
-    user_rated = user_item_matrix.loc[user_id].dropna().index.tolist()
-    predictions = []
 
-    for movie_id in user_item_matrix.columns:
-        if movie_id not in user_rated:
-            pred = predict_rating(user_id, movie_id)
-            if pred > 0:
-                predictions.append((movie_id, pred))
+    if user_id not in user_item_matrix.index:
+        return jsonify({"error": f"User ID {user_id} not found in matrix."}), 404
+
+    user_rated = user_item_matrix.loc[user_id].dropna().index.tolist()
+    unseen_movies = [m for m in user_item_matrix.columns if m not in user_rated]
+    sampled_movies = unseen_movies[:300]
+
+    predictions = []
+    for movie_id in sampled_movies:
+        pred = predict_rating(user_id, movie_id)
+        if pred > 0:
+            predictions.append((movie_id, pred))
+
+    top_n = sorted(predictions, key=lambda x: x[1], reverse=True)[:N]
+    result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
+    return jsonify({"user_id": user_id, "recommendations": result})
+
 
     top_n = sorted(predictions, key=lambda x: x[1], reverse=True)[:N]
     result = [{"movie_id": int(mid), "predicted_rating": round(r, 2)} for mid, r in top_n]
